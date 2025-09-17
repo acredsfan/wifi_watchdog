@@ -1,0 +1,17 @@
+[Unit]
+Description=WiFi Watchdog Service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 -m watchdog.main /etc/wifi-watchdog/watchdog.yml
+Restart=on-failure
+RestartSec=10
+User=root
+Group=root
+AmbientCapabilities=CAP_NET_ADMIN
+Nice=5
+
+[Install]
+WantedBy=multi-user.target

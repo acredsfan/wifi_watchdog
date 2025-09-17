@@ -1,0 +1,59 @@
+# Default configuration for WiFi Watchdog
+interface: wlan0
+check_interval_seconds: 15
+history_size: 20
+thresholds:
+  degraded_fail_ratio: 0.4
+  lost_fail_ratio: 0.8
+  degraded_consecutive: 3
+  lost_consecutive: 6
+signal:
+  rssi_degraded: -70
+  rssi_lost: -85
+  min_bitrate_mbps: 6
+hosts:
+  ping: [1.1.1.1, 8.8.8.8, 9.9.9.9]
+  dns_lookup: example.com
+  http_probe: https://example.com/healthz
+timeouts:
+  ping_ms: 800
+  dns_ms: 1200
+  http_ms: 2000
+escalation:
+  healthy_reset_consecutive: 3
+  tiers:
+    - name: refresh_dhcp
+      enabled: true
+      min_interval_seconds: 60
+    - name: restart_network_services
+      enabled: true
+      services: ["wpa_supplicant", "dhcpcd"]
+      min_interval_seconds: 120
+    - name: cycle_interface
+      enabled: true
+      min_interval_seconds: 180
+    - name: reset_usb_device
+      enabled: true
+      device_id: "0bda:1a2b"
+      min_interval_seconds: 300
+    - name: power_cycle_hub
+      enabled: false
+      hub_port: "1-1"
+      min_interval_seconds: 600
+    - name: reboot
+      enabled: true
+      min_interval_seconds: 21600
+limits:
+  max_reboots_per_day: 2
+  min_uptime_before_reboot: 180
+  min_seconds_between_reboots: 3600
+paths:
+  status_json: /var/run/wifi-watchdog/status.json
+  state_dir: /var/lib/wifi-watchdog
+logging:
+  level: INFO
+  json: true
+  destination: stdout
+features:
+  prometheus_textfile: /var/lib/node_exporter/textfile_collector/wifi_watchdog.prom
+  dry_run: false

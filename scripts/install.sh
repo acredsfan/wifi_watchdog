@@ -10,15 +10,20 @@ if [[ $EUID -ne 0 ]]; then
   exit 1
 fi
 
-mkdir -p /opt/wifi-watchdog
-cp -r ../src /opt/wifi-watchdog/
+# Install/upgrade package into system Python so 'python3 -m watchdog.main' works
+PACKAGE_ROOT="/opt/wifi-watchdog"
+mkdir -p "$PACKAGE_ROOT"
+rsync -a --delete "$(dirname "$0")/.."/ "$PACKAGE_ROOT"/ 2>/dev/null || cp -r ../src "$PACKAGE_ROOT"/
+
+cd "$PACKAGE_ROOT"
+pip install --upgrade pip --break-system-packages >/dev/null 2>&1 || true
+pip install . --break-system-packages || pip install pyyaml --break-system-packages
 mkdir -p "$CONFIG_DEST_DIR"
 if [[ ! -f "$CONFIG_DEST_DIR/watchdog.yml" ]]; then
   cp "$CONFIG_SRC_DIR/watchdog.yml" "$CONFIG_DEST_DIR/watchdog.yml"
 fi
 
-pip install --upgrade pip --break-system-packages
-pip install pyyaml --break-system-packages
+# Ensure config directory exists
 
 install -m 644 "$SERVICE_FILE" /etc/systemd/system/wifi-watchdog.service
 systemctl daemon-reload

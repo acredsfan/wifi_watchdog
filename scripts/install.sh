@@ -17,8 +17,8 @@ if [[ ! -f "$CONFIG_DEST_DIR/watchdog.yml" ]]; then
   cp "$CONFIG_SRC_DIR/watchdog.yml" "$CONFIG_DEST_DIR/watchdog.yml"
 fi
 
-pip3 install --upgrade pip
-pip3 install pyyaml
+pip install --upgrade pip --break-system-packages
+pip install pyyaml --break-system-packages
 
 install -m 644 "$SERVICE_FILE" /etc/systemd/system/wifi-watchdog.service
 systemctl daemon-reload

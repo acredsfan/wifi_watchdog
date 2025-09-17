@@ -79,10 +79,9 @@ class EscalationManager:
 
         success = self._invoke_tier(tier)
         state.last_invoked = now
-        if success:
-            # after an action, advance index if not last
-            if self._current_index < len(self._tiers) - 1:
-                self._current_index += 1
+        # advance ladder regardless of success to avoid stalling on a broken tier
+        if self._current_index < len(self._tiers) - 1:
+            self._current_index += 1
         return tier.name
 
     def _invoke_tier(self, tier: EscalationTier) -> bool:

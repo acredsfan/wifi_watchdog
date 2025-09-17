@@ -11,9 +11,10 @@ if [[ $EUID -ne 0 ]]; then
 fi
 
 # Install/upgrade package into system Python so 'python3 -m watchdog.main' works
-PACKAGE_ROOT="/opt/wifi-watchdog"
+PACKAGE_ROOT="/opt/wifi_watchdog"
 mkdir -p "$PACKAGE_ROOT"
-rsync -a --delete "$(dirname "$0")/.."/ "$PACKAGE_ROOT"/ 2>/dev/null || cp -r ../src "$PACKAGE_ROOT"/
+RSYNC_SRC="$(cd "$(dirname "$0")/.." && pwd)"
+rsync -a --delete "$RSYNC_SRC"/ "$PACKAGE_ROOT"/ 2>/dev/null || cp -r "$RSYNC_SRC"/src "$PACKAGE_ROOT"/
 
 cd "$PACKAGE_ROOT"
 pip install --upgrade pip --break-system-packages >/dev/null 2>&1 || true
@@ -24,6 +25,16 @@ if [[ ! -f "$CONFIG_DEST_DIR/watchdog.yml" ]]; then
 fi
 
 # Ensure config directory exists
+
+if [[ ! -f "$SERVICE_FILE" ]]; then
+  # Attempt to locate service file inside synchronized root
+  if [[ -f "$PACKAGE_ROOT/systemd/wifi-watchdog.service" ]]; then
+    SERVICE_FILE="$PACKAGE_ROOT/systemd/wifi-watchdog.service"
+  else
+    echo "Error: service unit file not found at $SERVICE_FILE" >&2
+    exit 2
+  fi
+fi
 
 install -m 644 "$SERVICE_FILE" /etc/systemd/system/wifi-watchdog.service
 systemctl daemon-reload

@@ -51,6 +51,15 @@ class Limits:
 class Paths:
     status_json: str = "/var/run/wifi-watchdog/status.json"
     state_dir: str = "/var/lib/wifi-watchdog"
+    action_history: str = "/var/lib/wifi-watchdog/action_history.log"
+
+@dc.dataclass(slots=True)
+class AdaptiveScheduling:
+    enabled: bool = True
+    min_interval_seconds: int = 10
+    max_interval_seconds: int = 60
+    healthy_cycles_for_backoff: int = 6
+    backoff_factor: float = 1.25  # multiplicative
 
 @dc.dataclass(slots=True)
 class LoggingConfig:
@@ -62,6 +71,7 @@ class LoggingConfig:
 class Features:
     prometheus_textfile: Optional[str] = None
     dry_run: bool = False
+    systemd_watchdog: bool = False
 
 @dc.dataclass(slots=True)
 class Hosts:
@@ -83,6 +93,7 @@ class Config:
     paths: Paths = dc.field(default_factory=Paths)
     logging: LoggingConfig = dc.field(default_factory=LoggingConfig)
     features: Features = dc.field(default_factory=Features)
+    adaptive: AdaptiveScheduling = dc.field(default_factory=AdaptiveScheduling)
 
     @staticmethod
     def from_dict(d: dict[str, Any]) -> "Config":
@@ -99,6 +110,7 @@ class Config:
         paths = Paths(**d.get("paths", {}))
         logging_cfg = LoggingConfig(**d.get("logging", {}))
         features = Features(**d.get("features", {}))
+        adaptive = AdaptiveScheduling(**d.get("adaptive", {}))
         hosts = Hosts(**d.get("hosts", {}))
 
         esc_raw = d.get("escalation", {}) or {}
@@ -121,6 +133,7 @@ class Config:
             paths=paths,
             logging=logging_cfg,
             features=features,
+            adaptive=adaptive,
         )
 
     def to_json(self) -> str:
@@ -149,6 +162,10 @@ def validate_config(cfg: Config) -> None:
         raise ValueError("min_seconds_between_reboots must be >= 0")
     if cfg.limits.min_uptime_before_reboot < 0:
         raise ValueError("min_uptime_before_reboot must be >= 0")
+    if cfg.adaptive.min_interval_seconds < 5:
+        raise ValueError("adaptive.min_interval_seconds must be >= 5")
+    if cfg.adaptive.max_interval_seconds < cfg.adaptive.min_interval_seconds:
+        raise ValueError("adaptive.max_interval_seconds must be >= min_interval_seconds")
     # Additional checks could be added here
 
 

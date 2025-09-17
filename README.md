@@ -11,6 +11,10 @@ A lightweight watchdog daemon that monitors WiFi connectivity and performs progr
 - Status JSON file + optional Prometheus textfile metrics
 - Dry-run mode for safe validation
 - Minimal dependencies (PyYAML)
+ - Adaptive interval backoff when stable
+ - Action history JSONL log for diagnostics
+ - Expanded Prometheus metrics (tier counters, last state change timestamp)
+ - Optional systemd watchdog integration
 
 ## Quick Start (On Raspberry Pi)
 ```bash
@@ -43,6 +47,9 @@ Key sections:
 - `limits.max_reboots_per_day` – safety limit
 - `limits.min_uptime_before_reboot` – do not reboot before this uptime (seconds)
 - `limits.min_seconds_between_reboots` – spacing between reboots
+- `adaptive` – dynamic interval backoff settings
+- `paths.action_history` – JSON lines action/event log
+- `features.systemd_watchdog` – enable sd_notify watchdog pings (service unit must have WatchdogSec)
 
 ## Escalation Logic
 Each loop classifies health. If degraded/lost persists past cooldown, the current tier executes. On recovery (stable healthy for N cycles) the ladder resets to first tier. Reboot tier is limited per day and will not trigger in dry-run mode.
@@ -50,6 +57,23 @@ Each loop classifies health. If degraded/lost persists past cooldown, the curren
 ## Status & Metrics
 - JSON status: path configured at `paths.status_json` (default `/var/run/wifi-watchdog/status.json`).
 - Prometheus: set `features.prometheus_textfile` to a writable file in the node_exporter textfile collector directory.
+	Exposed metrics:
+	- `wifi_watchdog_state` (1 healthy / 0 otherwise)
+	- `wifi_watchdog_fail_ratio`
+	- `wifi_watchdog_last_state_change_ts`
+	- `wifi_watchdog_tier_invocations{tier="..."}`
+
+## Adaptive Scheduling
+When `adaptive.enabled: true`, after `adaptive.healthy_cycles_for_backoff` consecutive healthy cycles the loop interval increases multiplicatively by `adaptive.backoff_factor` up to `adaptive.max_interval_seconds`. Any non-healthy state resets to the base `check_interval_seconds`.
+
+## Action History
+Each loop and tier invocation appends a single JSON line to `paths.action_history` (default `/var/lib/wifi-watchdog/action_history.log`). Example:
+```json
+{"ts": 1694900000.123, "event":"tier_invoke", "tier":"cycle_interface", "success":true}
+```
+
+## Systemd Watchdog
+Enable by setting `features.systemd_watchdog: true` and uncommenting `WatchdogSec=` in the service unit. The daemon will emit `WATCHDOG=1` notifications each cycle using the NOTIFY_SOCKET interface.
 
 ## Dry Run Mode
 Set `features.dry_run: true` to validate logic without affecting the system. All actions log with `dry_run_` prefix.

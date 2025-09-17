@@ -4,7 +4,7 @@ After=network-online.target
 Wants=network-online.target
 
 [Service]
-Type=simple
+Type=notify
 ExecStart=/usr/bin/python3 -m watchdog.main /etc/wifi-watchdog/watchdog.yml
 Restart=on-failure
 RestartSec=10
@@ -12,6 +12,8 @@ User=root
 Group=root
 AmbientCapabilities=CAP_NET_ADMIN
 Nice=5
+# Uncomment to enable systemd watchdog (also set features.systemd_watchdog: true in config)
+# WatchdogSec=40s
 
 [Install]
 WantedBy=multi-user.target

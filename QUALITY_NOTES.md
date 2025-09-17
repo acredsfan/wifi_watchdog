@@ -7,14 +7,14 @@
 
 ## Recommended Enhancements
 1. Add integration test harness with mocked subprocess layer. (TODO)
-2. Adaptive probe scheduling (back off when healthy). (TODO)
-3. Persist richer action history (JSON lines). (TODO)
-4. USB reset strategy abstraction (usbreset vs unbind). (PARTIAL currently heuristic)
+2. Adaptive probe scheduling (back off when healthy). (DONE)
+3. Persist richer action history (JSON lines). (DONE)
+4. USB reset strategy abstraction (usbreset vs unbind). (DONE basic strategies)
 5. MQTT / WebSocket telemetry. (TODO)
 6. Plugin system for custom tiers. (TODO)
 7. CLI command for manual tier invocation / simulation. (TODO)
-8. Systemd watchdog integration (`WatchdogSec=`). (TODO)
-9. Prometheus expansion (latency histograms, tier counters). (TODO)
+8. Systemd watchdog integration (`WatchdogSec=`). (DONE optional)
+9. Prometheus expansion (latency histograms, tier counters). (PARTIAL: counters + state change timestamp)
 10. Multi-interface failover support. (TODO)
 
 ## Safety & Reliability Considerations

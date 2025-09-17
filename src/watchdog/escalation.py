@@ -10,6 +10,7 @@ import os
 from .config import Config, EscalationTier
 from .metrics import HealthState, ClassificationResult
 from . import recovery_steps as steps
+from .status import append_action_history, inc_tier_counter
 
 logger = logging.getLogger(__name__)
 
@@ -82,6 +83,11 @@ class EscalationManager:
         # advance ladder regardless of success to avoid stalling on a broken tier
         if self._current_index < len(self._tiers) - 1:
             self._current_index += 1
+        try:
+            append_action_history(self.cfg, {"event": "tier_invoke", "tier": tier.name, "success": success})
+            inc_tier_counter(tier.name)
+        except Exception:  # pragma: no cover
+            pass
         return tier.name
 
     def _invoke_tier(self, tier: EscalationTier) -> bool:

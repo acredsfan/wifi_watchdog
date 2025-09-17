@@ -1,0 +1,55 @@
+# Python bytecode / cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+.env
+.python-version
+
+# Build / packaging
+build/
+dist/
+*.egg-info/
+*.egg
+pip-wheel-metadata/
+
+# Testing / coverage
+.pytest_cache/
+.mypy_cache/
+.coverage
+coverage.xml
+htmlcov/
+.tox/
+
+# IDE / tooling
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs / runtime artifacts
+*.log
+*.pid
+status.json
+*.prom
+
+# OS / misc
+.DS_Store
+Thumbs.db
+
+# Local scripts or scratch files (pattern examples)
+scratch*/
+tmp*/
+
+# Node-style lockfiles (in case of future additions)
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+
+# Optional: local state directory if repointed during development
+state/

@@ -34,6 +34,9 @@ def run(cfg: Config) -> None:
 
     Path(cfg.paths.state_dir).mkdir(parents=True, exist_ok=True)
 
+    # Send READY=1 to systemd if Type=notify is used (always safe; ignored when not under systemd).
+    _sd_notify("READY=1")
+
     while not _shutdown:
         start = time.time()
         classification = None  # type: ignore[assignment]
@@ -83,25 +86,9 @@ def run(cfg: Config) -> None:
         elapsed = time.time() - start
         base_sleep = max(0, current_interval - elapsed)
         jitter = random.uniform(-0.1 * current_interval, 0.1 * current_interval)
-        # systemd watchdog notification (simple implementation)
+        # systemd watchdog kick (optional)
         if cfg.features.systemd_watchdog:
-            notify_sock = os.getenv('NOTIFY_SOCKET')
-            if notify_sock:
-                try:
-                    import socket as _sock
-                    addr = notify_sock
-                    if addr.startswith('@'):  # abstract namespace
-                        addr = '\0' + addr[1:]
-                    af_unix = getattr(_sock, 'AF_UNIX', None)
-                    if af_unix is None:
-                        raise RuntimeError('AF_UNIX not supported on this platform')
-                    s = _sock.socket(af_unix, _sock.SOCK_DGRAM)
-                    s.settimeout(0.05)
-                    s.connect(addr)
-                    s.sendall(b'WATCHDOG=1')
-                    s.close()
-                except Exception:  # pragma: no cover
-                    pass
+            _sd_notify("WATCHDOG=1")
         time.sleep(max(0.5, base_sleep + jitter))
 
 
@@ -121,9 +108,33 @@ def update_adaptive_interval(cfg: Config, state: str, current_interval: int, con
         current_interval = cfg.check_interval_seconds
         consecutive_healthy = 0
     return current_interval, consecutive_healthy, backoff_event, reset_event
+    # (Shutdown logging handled outside this helper.)
 
 
-    logger.info("watchdog_shutdown")
+def _sd_notify(message: str) -> None:
+    """Send a systemd sd_notify style message if NOTIFY_SOCKET is present.
+
+    message examples: "READY=1", "WATCHDOG=1", "STATUS=...".
+    Safe to call even when not managed by systemd (silently no-ops).
+    """
+    notify_sock = os.getenv("NOTIFY_SOCKET")
+    if not notify_sock:
+        return
+    try:  # pragma: no cover - environment dependent
+        import socket as _sock
+        addr = notify_sock
+        if addr.startswith('@'):  # abstract namespace
+            addr = '\0' + addr[1:]
+        af_unix = getattr(_sock, "AF_UNIX", None)
+        if af_unix is None:
+            return
+        s = _sock.socket(af_unix, _sock.SOCK_DGRAM)
+        s.settimeout(0.05)
+        s.connect(addr)
+        s.sendall(message.encode("utf-8"))
+        s.close()
+    except Exception:
+        pass
 
 
 def main() -> int:

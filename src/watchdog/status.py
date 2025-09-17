@@ -61,7 +61,9 @@ def write_prometheus(cfg: Config, classification: ClassificationResult) -> None:
     for tier, count in _tier_counters.items():
         lines.append(f"wifi_watchdog_tier_invocations{{tier=\"{tier}\"}} {count}")
     try:
-        Path(prom_path).write_text("\n".join(lines) + "\n", encoding="utf-8")
+        p = Path(prom_path)
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text("\n".join(lines) + "\n", encoding="utf-8")
     except Exception as e:
         logger.warning("write_prometheus_failed", extra={"extra_fields": {"error": str(e)}})
 
